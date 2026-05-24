@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRoles {
+  Customer
+  Admin
+}
+
+enum ProductGender {
+  Men
+  Women
+  Unisex
+}
+
+enum PaymentStatuses {
+  Pending
+  Success
+  Failed
+  Refunded
+}
+
+enum OrderStatuses {
+  Pending
+  Paid
+  Shipped
+  Delivered
+  Cancelled
+}
+
+model User {
+  id             Int         @id @default(autoincrement())
+  email          String      @unique
+  name           String?
+  hashedPassword String?
+  username       String?     @unique
+  phone          String?     @unique
+  address        String?
+  role           UserRoles   @default(Customer)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  reviews        Review[]
+  orderItems     OrderItem[]
+  carts          Cart[]
+}
+
+model Brand {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  logoUrl  String?
+  products Product[]
+  reviews  Review[]
+}
+
+model Category {
+  id          Int                    @id @default(autoincrement())
+  name        String                 @unique
+  description String?
+  products    CategoriesOnProducts[]
+}
+
+model CategoriesOnProducts {
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  assignedAt DateTime @default(now())
+  assignedBy String
+
+  @@id([productId, categoryId])
+}
+
+model ShoeVariant {
+  id         Int         @id @default(autoincrement())
+  product    Product     @relation(fields: [productId], references: [id])
+  productId  Int
+  size       Int         @default(0)
+  colors     String[]
+  stock      Int         @default(1)
+  sku        String
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+}
+
+model Product {
+  id            Int                    @id @default(autoincrement())
+  name          String
+  description   String
+  price         Decimal
+  discountPrice Decimal
+  gender        ProductGender          @default(Men)
+  categories    CategoriesOnProducts[]
+  variant       ShoeVariant[]
+  brand         Brand                  @relation(fields: [brandId], references: [id])
+  brandId       Int
+  thumbnail     String?                @db.VarChar(2048)
+  isFeatured    Boolean                @default(false)
+  reviews       Review[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  brand     Brand?   @relation(fields: [brandId], references: [id])
+  brandId   Int?
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  rating    Int      @default(0)
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id             Int             @id @default(autoincrement())
+  order          Order           @relation(fields: [orderId], references: [id])
+  orderId        Int
+  paymentGateway String
+  transactionId  String
+  amount         Decimal
+  status         PaymentStatuses @default(Pending)
+  paidAt         DateTime        @default(now())
+}
+
+model Order {
+  id              Int           @id @default(autoincrement())
+  totalAmount     Decimal
+  status          OrderStatuses @default(Pending)
+  shippingAddress String
+  paymentMethod   String
+  createdAt       DateTime      @default(now())
+  payments        Payment[]
+}
+
+model OrderItem {
+  id            Int         @id @default(autoincrement())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        Int
+  shoeVariant   ShoeVariant @relation(fields: [shoeVariantId], references: [id])
+  shoeVariantId Int
+  quantity      Int         @default(0)
+  unitPrice     Int         @default(0)
+  totalPrice    Int         @default(0)
+  createdAt     DateTime    @default(now())
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  user      User       @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime   @default(now())
+  cartItems CartItem[]
+}
+
+model CartItem {
+  id            Int         @id @default(autoincrement())
+  cart          Cart        @relation(fields: [cartId], references: [id])
+  cartId        Int
+  shoeVariant   ShoeVariant @relation(fields: [shoeVariantId], references: [id])
+  shoeVariantId Int
+  quantity      Int         @default(1)
+}
