@@ -1,0 +1,10 @@
+{
+  "typeCheckingMode": "basic",
+
+  "reportMissingTypeStubs": false,
+
+  "exclude": ["**/migrations", "**/__pycache__"],
+
+  "venvPath": ".",
+  "venv": ".venv",
+}
